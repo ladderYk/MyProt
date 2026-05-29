@@ -1,0 +1,49 @@
+{
+  "protocolName": "ModbusRTU",
+  "transport": {
+    "type": "Serial",
+    "baudRate": 9600,
+    "parity": "None",
+    "dataBits": 8,
+    "stopBits": "One"
+  },
+  "connection": {
+    "responseTimeoutMs": 1000,
+    "interFrameDelayMs": 20
+  },
+  "operations": {
+    "ReadHoldingRegisters": {
+      "requestTemplate": [
+        "{SlaveAddress:X2}",
+        "03",
+        "{StartAddress:X4}",
+        "{RegisterCount:X4}",
+        "{CRC:CRC16Modbus:X4}"
+      ],
+      "responseParser": {
+        "validCondition": "resp[1] == 0x03",
+        "dataStartIndex": 3,
+        "dataLengthExpr": "resp[2]",
+        "valueType": "UInt16",
+        "arrayCountExpr": "resp[2] / 2",
+        "byteOrder": "BigEndian"
+      }
+    },
+    "ReadCoils": {
+      "requestTemplate": [
+        "{SlaveAddress:X2}",
+        "01",
+        "{StartAddress:X4}",
+        "{BitCount:X4}",
+        "{CRC:CRC16Modbus:X4}"
+      ],
+      "responseParser": {
+        "validCondition": "resp[1] == 0x01",
+        "dataStartIndex": 3,
+        "dataLengthExpr": "resp[2]",
+        "valueType": "BitArray",
+        "byteOrder": "BigEndian"
+      }
+    }
+  }
+}

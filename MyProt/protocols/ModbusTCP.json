@@ -1,0 +1,72 @@
+{
+  "protocolName": "ModbusTCP",
+  "transport": {
+    "type": "Tcp",
+    "defaultPort": 502
+  },
+  "framing": {
+    "type": "LengthField",
+    "lengthFieldOffset": 4,
+    "lengthFieldLength": 2,
+    "lengthIncludesHeader": false,
+    "byteOrder": "BigEndian",
+    "headerLength": 6
+  },
+  "connection": {
+    "responseTimeoutMs": 1000,
+    "interFrameDelayMs": 0
+  },
+  "operations": {
+    "ReadHoldingRegisters": {
+      "requestTemplate": [
+        "{TransactionID:auto:X4}",
+        "00 00",
+        "{Length:calc:X4}",
+        "{UnitID:X2}",
+        "03",
+        "{StartAddress:X4}",
+        "{RegisterCount:X4}"
+      ],
+      "responseParser": {
+        "validCondition": "resp[7] == 0x03",
+        "dataStartIndex": 9,
+        "dataLengthExpr": "resp[8]",
+        "valueType": "ByteArray"
+      }
+    },
+    "ReadCoils": {
+      "requestTemplate": [
+        "{TransactionID:auto:X4}",
+        "00 00",
+        "{Length:calc:X4}",
+        "{UnitID:X2}",
+        "01",
+        "{StartAddress:X4}",
+        "{BitCount:X4}"
+      ],
+      "responseParser": {
+        "validCondition": "resp[7] == 0x01",
+        "dataStartIndex": 9,
+        "dataLengthExpr": "resp[8]",
+        "valueType": "ByteArray"
+      }
+    },
+    "WriteSingleRegister": {
+      "requestTemplate": [
+        "{TransactionID:auto:X4}",
+        "00 00",
+        "{Length:calc:X4}",
+        "{UnitID:X2}",
+        "06",
+        "{RegisterAddress:X4}",
+        "{Value:X4}"
+      ],
+      "responseParser": {
+        "validCondition": "resp[7] == 0x06",
+        "dataStartIndex": 0,
+        "dataLengthExpr": "0",
+        "valueType": "Empty"
+      }
+    }
+  }
+}
