@@ -5,17 +5,19 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MyProt
 {
     public class TcpChannel : IDisposable
     {
-        private Socket _client; // 客户端
+        private TcpClient _client; // 客户端
         private string _host;
         private int _port;
         private int _timeoutMs;
         private FramingConfig _framing;
+        private NetworkStream _stream;
 
         public bool IsConnected => _client?.Connected ?? false;
         public TcpChannel(FramingConfig framing = null)
@@ -23,38 +25,21 @@ namespace MyProt
             _framing = framing;
         }
 
-        public void ConnectAsync(string host, int port, int timeoutMs)
+        public async Task ConnectAsync(string host, int port, int timeoutMs)
         {
             _host = host;
             _port = port;
             _timeoutMs = timeoutMs;
-            _client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            _client.ReceiveTimeout = _timeoutMs;
-            _client.SendTimeout = _timeoutMs;
-            _client.BeginConnect(new IPEndPoint(IPAddress.Parse(host), port), AsyncConnectCallback, _client);
+            _client = new TcpClient();
+            await _client.ConnectAsync(_host, _port);
+            _stream = _client.GetStream();
+            _stream.ReadTimeout = _timeoutMs;
+            _stream.WriteTimeout = _timeoutMs;
         }
-        private void AsyncConnectCallback(IAsyncResult ar)
-        {
-            if (!ar.AsyncWaitHandle.WaitOne(_timeoutMs))
-            {
-                return;
-            }
-            _client = (Socket)ar.AsyncState;
-            try
-            {
-                if (_client.Connected)
-                {
-                    _client.EndConnect(ar);
-                }
-            }
-            catch (Exception e)
-            {
 
-            }
-        }
         public void SendAsync(byte[] request)
         {
-            _client.Send(request);
+            _stream.WriteAsync(request);
         }
         private readonly SemaphoreSlim _lock = new(1, 1);
 
@@ -66,7 +51,7 @@ namespace MyProt
             {
                 if (!IsConnected)
                     return new byte[0];
-                _client.Send(request);
+                await _stream.WriteAsync(request);
                 var framing = overrideFraming ?? _framing;
 
                 if (framing == null)
@@ -74,9 +59,9 @@ namespace MyProt
                 switch (framing.type)
                 {
                     case "Fixed":
-                        return ReadFixedAsync(framing.fixedLength.Value);
+                        return await ReadFixedAsync(framing.fixedLength.Value);
                     case "LengthField":
-                        return ReadLengthFieldFrameAsync(framing);
+                        return await ReadLengthFieldFrameAsync(framing);
                     default:
                         throw new NotSupportedException($"不支持的 Framing 类型: {framing.type}");
                 }
@@ -88,20 +73,20 @@ namespace MyProt
         }
 
         // 固定长度读取
-        private byte[] ReadFixedAsync(int length)
+        private async Task<byte[]> ReadFixedAsync(int length)
         {
             byte[] buf = new byte[length];
-            ReadExactAsync(buf, 0, length);
+            await ReadExactAsync(buf, 0, length);
             return buf;
         }
 
         // 长度字段模式通用读取
-        private byte[] ReadLengthFieldFrameAsync(FramingConfig f)
+        private async Task<byte[]> ReadLengthFieldFrameAsync(FramingConfig f)
         {
             // 先读入最少字节：至少包含长度字段的完整部分
             int minHeader = f.lengthFieldOffset.Value + f.lengthFieldLength.Value;
             byte[] header = new byte[minHeader];
-            ReadExactAsync(header, 0, minHeader);
+            await ReadExactAsync(header, 0, minHeader);
 
             // 从 header 中提取长度值
             long lengthValue = 0;
@@ -129,7 +114,7 @@ namespace MyProt
             {
                 byte[] full = new byte[totalLength];
                 Buffer.BlockCopy(header, 0, full, 0, minHeader);
-                ReadExactAsync(full, minHeader, totalLength - minHeader);
+                await ReadExactAsync(full, minHeader, totalLength - minHeader);
                 return full;
             }
             else
@@ -139,12 +124,11 @@ namespace MyProt
             }
         }
 
-        private void ReadExactAsync(byte[] buffer, int offset, int count)
+        private async Task ReadExactAsync(byte[] buffer, int offset, int count)
         {
-
             while (count > 0)
             {
-                int read = _client.Receive(buffer, offset, count, SocketFlags.None);
+                int read = await _stream.ReadAsync(buffer, offset, count);
                 if (read == 0) throw new IOException("连接关闭");
                 offset += read;
                 count -= read;
@@ -154,6 +138,7 @@ namespace MyProt
 
         public void Disconnect()
         {
+            _stream?.Close();
             _client?.Close();
         }
 

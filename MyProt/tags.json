@@ -5,6 +5,12 @@
       "protocol": "S7",
       "host": "127.0.0.1",
       "port": 102
+    },
+     {
+      "id": "modbus",
+      "protocol": "ModbusTCP",
+      "host": "127.0.0.1",
+      "port": 502
     }
   ],
   "tags": [

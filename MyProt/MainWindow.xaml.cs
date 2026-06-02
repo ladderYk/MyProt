@@ -32,8 +32,10 @@ namespace MyProt
         {
             try
             {
-                TagValue temp = await gateway.ReadTagAsync("DB1_Real0");
-                Console.WriteLine($"温度: {temp.Value}");
+                DeviceManager dm = new DeviceManager(gateway.getDeviceList(), (await App.ProtocolService.GetAllAsync()).ToList());
+                dm.ConnectAllAsync();
+                //TagValue temp = await gateway.ReadTagAsync("DB1_Real0");
+                //Console.WriteLine($"温度: {temp.Value}");
             }
             catch (Exception e)
             {

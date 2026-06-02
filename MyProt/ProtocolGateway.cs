@@ -13,7 +13,6 @@ namespace MyProt
 {
     public class ProtocolGateway
     {
-        private readonly Dictionary<string, ProtocolConfig> _protocols = new Dictionary<string, ProtocolConfig>();
         private readonly Dictionary<string, DeviceConfig> _devices = new Dictionary<string, DeviceConfig>();
         private readonly List<TagDefinition> _tags;
         private readonly Dictionary<string, TcpChannel> _channels = new Dictionary<string, TcpChannel>();
@@ -21,20 +20,6 @@ namespace MyProt
 
         public ProtocolGateway(string protocolFolder, string tagsFile)
         {
-            // 加载所有协议 JSON
-            foreach (var file in Directory.GetFiles(protocolFolder, "*.json"))
-            {
-                using (System.IO.StreamReader streamReader = File.OpenText(file))
-                {
-                    using (JsonTextReader reader = new JsonTextReader(streamReader))
-                    {
-                        var proto = ((JObject)JToken.ReadFrom(reader)).ToObject<ProtocolConfig>();
-
-                        _protocols[proto.protocolName] = proto;
-                    }
-                }
-            }
-
             using (System.IO.StreamReader streamReader = File.OpenText(tagsFile))
             {
                 using (JsonTextReader reader = new JsonTextReader(streamReader))
@@ -49,9 +34,9 @@ namespace MyProt
             }
 
         }
-        public List<ProtocolConfig> getList()
+        public async Task<IEnumerable<ProtocolConfig>> getListAsync()
         {
-            return _protocols.Values.ToList();
+            return await App.ProtocolService.GetAllAsync();
         }
         public List<DeviceConfig> getDeviceList()
         {
@@ -66,7 +51,7 @@ namespace MyProt
 
             var tag = _tags.First(t => t.tagName == tagName);
             var device = _devices[tag.deviceId];
-            var protocol = _protocols[device.protocol];          // 按协议名查询
+            var protocol = await App.ProtocolService.GetByIdAsync(device.protocol);          // 按协议名查询
             var operation = protocol.operations[tag.operation];
 
             // 获取或创建 TCP 通道
