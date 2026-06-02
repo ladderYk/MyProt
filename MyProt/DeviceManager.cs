@@ -66,6 +66,7 @@ namespace MyProt
                 // 可选择在此启动后台重连定时器
             }
         }
+
         public TcpChannel CreateChannel(FramingConfig framing)
         {
             var channel = new TcpChannel(framing);
@@ -79,6 +80,12 @@ namespace MyProt
             if (_channels.TryGetValue(deviceId, out var ch) && ch.IsConnected)
                 return ch;
             throw new Exception($"设备 {deviceId} 未连接");
+        }
+        public DeviceConfig GetDevice(string deviceId)
+        {
+            if (_deviceConfigs.TryGetValue(deviceId, out var ch))
+                return ch;
+            throw new Exception($"设备 {deviceId} 不存在");
         }
         public static bool Validate(string condition, byte[] resp)
         {

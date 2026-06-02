@@ -7,6 +7,11 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
         <Button Click="Button_Click">测试</Button>
+        <Button Grid.Column="1" Click="Button_Click_1">测试1</Button>
     </Grid>
 </Window>
