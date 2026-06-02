@@ -18,7 +18,7 @@ namespace MyProt
     public partial class MainWindow : Window
     {
         public static ProtocolGateway gateway;
-        public static DeviceManager dm;
+        public static PollingEngine pe;
         public MainWindow()
         {
             InitializeComponent();
@@ -33,8 +33,13 @@ namespace MyProt
         {
             try
             {
-                dm = new DeviceManager(gateway.getDeviceList(), (await App.ProtocolService.GetAllAsync()).ToList());
-                await dm.ConnectAllAsync();
+                if (pe == null)
+                {
+                    DeviceManager dm = new DeviceManager(gateway.getDeviceList(), (await App.ProtocolService.GetAllAsync()).ToList());
+
+                    pe = new PollingEngine(dm, gateway.getTagList(), new TagReader(dm, gateway.getTagList()), null);
+                }
+                await pe.StartAsync(new CancellationToken());
                 //TagValue temp = await gateway.ReadTagAsync("DB1_Real0");
                 //Console.WriteLine($"温度: {temp.Value}");
             }
@@ -50,31 +55,32 @@ namespace MyProt
         }
         private async Task GetTaskAsync()
         {
-            foreach (var tag in gateway.getTagList())
-            {
-                var channel = dm.GetChannel(tag.deviceId);
-                var device = dm.GetDevice(tag.deviceId);
-                var protocol = await App.ProtocolService.GetByIdAsync(device.protocol);          // 按协议名查询
-                var operation = protocol.operations[tag.operation];
-                var request = ProtocolEngine.BuildRequest(operation.requestTemplate, tag.variables);
-                //var request = ProtocolEngine.BuildRequest(operation.RequestTemplate, tag.Variables);
-                // 发送并接收
-                byte[] response = await channel.SendReceiveAsync(request);
+            await pe.StopAsync(new CancellationToken());
+            //foreach (var tag in gateway.getTagList())
+            //{
+            //    var channel = dm.GetChannel(tag.deviceId);
+            //    var device = dm.GetDevice(tag.deviceId);
+            //    var protocol = await App.ProtocolService.GetByIdAsync(device.protocol);          // 按协议名查询
+            //    var operation = protocol.operations[tag.operation];
+            //    var request = ProtocolEngine.BuildRequest(operation.requestTemplate, tag.variables);
+            //    //var request = ProtocolEngine.BuildRequest(operation.RequestTemplate, tag.Variables);
+            //    // 发送并接收
+            //    byte[] response = await channel.SendReceiveAsync(request);
 
-                // 解析响应
-                var rawData = ProtocolEngine.ParseResponse(response, operation.responseParser);
+            //    // 解析响应
+            //    var rawData = ProtocolEngine.ParseResponse(response, operation.responseParser);
 
-                // 转换为最终类型
-                //object finalValue = ConvertToFinalType(rawData as byte[], tag.FinalType);
+            //    // 转换为最终类型
+            //    //object finalValue = ConvertToFinalType(rawData as byte[], tag.FinalType);
 
-                TagValue tagValue = new TagValue
-                {
-                    TagName = tag.tagName,
-                    Value = rawData,
-                    Timestamp = DateTime.UtcNow,
-                    Quality = QualityCode.Good
-                };
-            }
+            //    TagValue tagValue = new TagValue
+            //    {
+            //        TagName = tag.tagName,
+            //        Value = rawData,
+            //        Timestamp = DateTime.UtcNow,
+            //        Quality = QualityCode.Good
+            //    };
+            //}
         }
     }
 }

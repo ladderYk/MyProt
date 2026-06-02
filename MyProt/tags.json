@@ -17,7 +17,8 @@
         "StartByte": 0,
         "StartAddress": 100,
         "RegisterCount": 1
-      }
+      },
+      "scanRateMs": 1000
     }
   ]
 }

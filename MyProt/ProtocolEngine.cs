@@ -32,12 +32,12 @@ namespace MyProt
                     string format = "";
                     if (parts.Length == 3)
                     {
-                        func = parts.Length > 1 ? parts[1] : null;
-                        format = parts.Length > 2 ? parts[2] : null;
+                        func = parts.Length > 1 ? parts[1] : "";
+                        format = parts.Length > 2 ? parts[2] : "";
                     }
                     else if (parts.Length == 2)
                     {
-                        format = parts.Length > 1 ? parts[1] : null;
+                        format = parts.Length > 1 ? parts[1] : "";
                     }
 
                     if (func == "auto" && varName == "TransactionID")

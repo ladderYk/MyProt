@@ -43,6 +43,7 @@ namespace MyProt
             try
             {
                 var channel = CreateChannel(proto.framing);
+
                 await channel.ConnectAsync(device.host, device.port, proto.connection.responseTimeoutMs);
 
                 // 执行握手（如果协议定义了）
@@ -100,6 +101,11 @@ namespace MyProt
                 return resp[idx] == expected;
             }
             return true;
+        }
+
+        public async Task<ProtocolConfig> GetProtocolAsync(string protocol)
+        {
+            return await App.ProtocolService.GetByIdAsync(protocol);
         }
     }
 }

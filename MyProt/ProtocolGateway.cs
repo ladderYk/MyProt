@@ -70,13 +70,7 @@ namespace MyProt
             // 转换为最终类型
             //object finalValue = ConvertToFinalType(rawData as byte[], tag.FinalType);
 
-            return new TagValue
-            {
-                TagName = tag.tagName,
-                Value = rawData,
-                Timestamp = DateTime.UtcNow,
-                Quality = QualityCode.Good
-            };
+            return new TagValue();
         }
 
         private async Task<TcpChannel> GetChannelAsync(DeviceConfig device, ProtocolConfig protocol)
@@ -150,13 +144,4 @@ namespace MyProt
         public List<TagDefinition> Tags { get; set; }
     }
 
-    public class TagValue
-    {
-        public string TagName { get; set; }
-        public object Value { get; set; }
-        public DateTime Timestamp { get; set; }
-        public QualityCode Quality { get; set; }
-    }
-
-    public enum QualityCode { Good = 0, Bad = 1 }
 }
