@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -25,8 +26,18 @@ namespace MyProt
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            TagValue temp = gateway.ReadTagAsync("DB1_Real0");
-            Console.WriteLine($"温度: {temp.Value}");
+            getDataAsync();
+        }
+        private async Task getDataAsync()
+        {
+            try
+            {
+                TagValue temp = await gateway.ReadTagAsync("DB1_Real0");
+                Console.WriteLine($"温度: {temp.Value}");
+            }
+            catch (Exception e)
+            {
+            }
         }
     }
-}
+    }

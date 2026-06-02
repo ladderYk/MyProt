@@ -61,7 +61,7 @@ namespace MyProt
         {
             return _tags.ToList();
         }
-        public TagValue ReadTagAsync(string tagName)
+        public async Task<TagValue> ReadTagAsync(string tagName)
         {
 
             var tag = _tags.First(t => t.tagName == tagName);
@@ -70,14 +70,14 @@ namespace MyProt
             var operation = protocol.operations[tag.operation];
 
             // 获取或创建 TCP 通道
-            var channel = GetChannelAsync(device, protocol);
+            var channel = await GetChannelAsync(device, protocol);
 
             Thread.Sleep(200);
             // 构建请求
             var request = ProtocolEngine.BuildRequest(operation.requestTemplate, tag.variables);
             //var request = ProtocolEngine.BuildRequest(operation.RequestTemplate, tag.Variables);
             // 发送并接收
-            byte[] response = channel.SendReceiveAsync(request);
+            byte[] response = await channel.SendReceiveAsync(request);
 
             // 解析响应
             var rawData = ProtocolEngine.ParseResponse(response, operation.responseParser);
@@ -94,7 +94,7 @@ namespace MyProt
             };
         }
 
-        private TcpChannel GetChannelAsync(DeviceConfig device, ProtocolConfig protocol)
+        private async Task<TcpChannel> GetChannelAsync(DeviceConfig device, ProtocolConfig protocol)
         {
             if (!_channels.ContainsKey(device.id))
             {
@@ -108,7 +108,7 @@ namespace MyProt
                     foreach (var step in protocol.handshake)
                     {
                         byte[] req = ProtocolEngine.BuildRequest(step.requestTemplate, new Dictionary<string, object>());
-                        byte[] resp = channel.SendReceiveAsync(req, step.framing);
+                        byte[] resp = await channel.SendReceiveAsync(req, step.framing);
                         if (resp.Length == 0 || !Validate(step.validCondition, resp))
                             throw new Exception($"握手失败: {step.name}");
                     }

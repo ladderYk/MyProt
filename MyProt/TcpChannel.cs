@@ -56,25 +56,35 @@ namespace MyProt
         {
             _client.Send(request);
         }
-        public byte[] SendReceiveAsync(byte[] request, FramingConfig overrideFraming = null)
+        private readonly SemaphoreSlim _lock = new(1, 1);
+
+        public async Task<byte[]> SendReceiveAsync(byte[] request, FramingConfig overrideFraming = null)
         {
-            if(!IsConnected)
-                return new byte[0];
-            _client.Send(request);
-            var framing = overrideFraming ?? _framing;
+            await _lock.WaitAsync();
 
-            if (framing == null)
-                throw new InvalidOperationException("未提供帧解析配置");
-            switch (framing.type)
+            try
             {
-                case "Fixed":
-                    return ReadFixedAsync(framing.fixedLength.Value);
-                case "LengthField":
-                    return ReadLengthFieldFrameAsync(framing);
-                default:
-                    throw new NotSupportedException($"不支持的 Framing 类型: {framing.type}");
-            }
+                if (!IsConnected)
+                    return new byte[0];
+                _client.Send(request);
+                var framing = overrideFraming ?? _framing;
 
+                if (framing == null)
+                    throw new InvalidOperationException("未提供帧解析配置");
+                switch (framing.type)
+                {
+                    case "Fixed":
+                        return ReadFixedAsync(framing.fixedLength.Value);
+                    case "LengthField":
+                        return ReadLengthFieldFrameAsync(framing);
+                    default:
+                        throw new NotSupportedException($"不支持的 Framing 类型: {framing.type}");
+                }
+            }
+            finally
+            {
+                _lock.Release();
+            }
         }
 
         // 固定长度读取
