@@ -25,7 +25,7 @@ namespace MyProt
 
         protected override void OnExit(ExitEventArgs e)
         {
-            WebApiHost.StopAsync().Wait();
+            //WebApiHost.StopAsync().Wait();
             base.OnExit(e);
         }
     }

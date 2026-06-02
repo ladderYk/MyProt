@@ -16,9 +16,17 @@ namespace MyProt
     /// </summary>
     public partial class MainWindow : Window
     {
+        public static ProtocolGateway gateway;
         public MainWindow()
         {
             InitializeComponent();
+            gateway = new ProtocolGateway("./Protocols", "./tags.json");
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            TagValue temp = gateway.ReadTagAsync("DB1_Real0");
+            Console.WriteLine($"温度: {temp.Value}");
         }
     }
 }
