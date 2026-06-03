@@ -19,6 +19,17 @@
         "RegisterCount": 1
       },
       "scanRateMs": 1000
+    }, {
+      "tagName": "read1",
+      "deviceId": "modbus",
+      "operation": "ReadHoldingRegisters",
+      "variables": {
+        "UnitID": 1,
+        "StartByte": 0,
+        "StartAddress": 10,
+        "RegisterCount": 1
+      },
+      "scanRateMs": 500
     }
   ]
 }

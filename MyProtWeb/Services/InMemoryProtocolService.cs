@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyProt.Services
+namespace MyProtWeb.Services
 {
     public class InMemoryProtocolService : IProtocolService
     {

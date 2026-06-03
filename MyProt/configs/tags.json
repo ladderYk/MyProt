@@ -1,0 +1,14 @@
+[
+    {
+      "tagName": "read",
+      "deviceId": "modbus",
+      "operation": "ReadHoldingRegisters",
+      "variables": {
+        "UnitID": 1,
+        "StartByte": 0,
+        "StartAddress": 100,
+        "RegisterCount": 1
+      },
+      "scanRateMs": 1000
+    }
+  ]

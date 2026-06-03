@@ -1,36 +1,35 @@
 {
   "devices": [
-    {
-      "id": "S7PLC1",
-      "protocol": "S7",
+     {
+      "id": "modbus",
+      "protocol": "ModbusTCP",
       "host": "127.0.0.1",
-      "port": 102
+      "port": 502
     }
   ],
   "tags": [
     {
-      "tagName": "DB1_Real0",
-      "deviceId": "S7PLC1",
-      "operation": "ReadDB",
+      "tagName": "read",
+      "deviceId": "modbus",
+      "operation": "ReadHoldingRegisters",
       "variables": {
-        "DbNumber": 1,
+        "UnitID": 1,
         "StartByte": 0,
-        "ReadLength": 4,
-        "TpktLength": 31
-      }
-    },
-    {
-      "tagName": "DB5_WriteTest",
-      "deviceId": "S7PLC1",
-      "operation": "WriteDB",
+        "StartAddress": 100,
+        "RegisterCount": 1
+      },
+      "scanRateMs": 1000
+    }, {
+      "tagName": "read1",
+      "deviceId": "modbus",
+      "operation": "ReadHoldingRegisters",
       "variables": {
-        "DbNumber": 5,
-        "StartByte": 10,
-        "WriteLength": 2,
-        "Data": "AABB", // 写入的原始十六进制数据
-        "DataLength": 6, // Data长度(2) + 4
-        "TpktLength": 39
-      }
+        "UnitID": 1,
+        "StartByte": 0,
+        "StartAddress": 10,
+        "RegisterCount": 1
+      },
+      "scanRateMs": 500
     }
   ]
 }
