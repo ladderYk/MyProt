@@ -44,7 +44,7 @@ namespace MyProt
             {
                 var channel = CreateChannel(proto.framing);
 
-                await channel.ConnectAsync(device.host, device.port, proto.connection.responseTimeoutMs);
+                channel.ConnectAsync(device.host, device.port, proto.connection.responseTimeoutMs);
 
                 // 执行握手（如果协议定义了）
                 if (proto.handshake != null)

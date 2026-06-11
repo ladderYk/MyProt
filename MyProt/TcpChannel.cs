@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -12,34 +14,53 @@ namespace MyProt
 {
     public class TcpChannel : IDisposable
     {
-        private TcpClient _client; // 客户端
+        private Socket _client; // 客户端
         private string _host;
         private int _port;
         private int _timeoutMs;
         private FramingConfig _framing;
-        private NetworkStream _stream;
 
         public bool IsConnected => _client?.Connected ?? false;
         public TcpChannel(FramingConfig framing = null)
         {
             _framing = framing;
         }
-
-        public async Task ConnectAsync(string host, int port, int timeoutMs)
+        public void SafeClose(Socket socket)
         {
+            try
+            {
+                if (socket?.Connected ?? false) socket?.Shutdown(SocketShutdown.Both);//正常关闭连接
+            }
+            catch { }
+
+            try
+            {
+                socket?.Close();
+            }
+            catch { }
+        }
+        public void ConnectAsync(string host, int port, int timeoutMs = 1000)
+        {
+            SafeClose(_client);
             _host = host;
             _port = port;
             _timeoutMs = timeoutMs;
-            _client = new TcpClient();
-            await _client.ConnectAsync(_host, _port);
-            _stream = _client.GetStream();
-            _stream.ReadTimeout = _timeoutMs;
-            _stream.WriteTimeout = _timeoutMs;
+            IPEndPoint IpEndPoint = new IPEndPoint(IPAddress.Parse(_host), _port);
+            _client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            _client.ReceiveTimeout = _timeoutMs;
+            _client.SendTimeout = _timeoutMs;
+
+            IAsyncResult connectResult = _client.BeginConnect(IpEndPoint, null, null);
+            //阻塞当前线程           
+            if (!connectResult.AsyncWaitHandle.WaitOne(_timeoutMs))
+                throw new TimeoutException("连接超时");
+
+            _client.EndConnect(connectResult);
         }
 
         public void SendAsync(byte[] request)
         {
-            _stream.WriteAsync(request);
+            _client.SendAsync(request);
         }
         private readonly SemaphoreSlim _lock = new(1, 1);
 
@@ -50,8 +71,8 @@ namespace MyProt
             try
             {
                 if (!IsConnected)
-                    return new byte[0];
-                await _stream.WriteAsync(request);
+                    throw new IOException("连接断开");
+                await _client.SendAsync(request);
                 var framing = overrideFraming ?? _framing;
 
                 if (framing == null)
@@ -59,9 +80,9 @@ namespace MyProt
                 switch (framing.type)
                 {
                     case "Fixed":
-                        return await ReadFixedAsync(framing.fixedLength.Value);
+                        return ReadFixedAsync(framing.fixedLength.Value);
                     case "LengthField":
-                        return await ReadLengthFieldFrameAsync(framing);
+                        return ReadLengthFieldFrameAsync(framing);
                     default:
                         throw new NotSupportedException($"不支持的 Framing 类型: {framing.type}");
                 }
@@ -73,20 +94,20 @@ namespace MyProt
         }
 
         // 固定长度读取
-        private async Task<byte[]> ReadFixedAsync(int length)
+        private byte[] ReadFixedAsync(int length)
         {
             byte[] buf = new byte[length];
-            await ReadExactAsync(buf, 0, length);
+            ReadExactAsync(buf, 0, length);
             return buf;
         }
 
         // 长度字段模式通用读取
-        private async Task<byte[]> ReadLengthFieldFrameAsync(FramingConfig f)
+        private byte[] ReadLengthFieldFrameAsync(FramingConfig f)
         {
             // 先读入最少字节：至少包含长度字段的完整部分
             int minHeader = f.lengthFieldOffset.Value + f.lengthFieldLength.Value;
             byte[] header = new byte[minHeader];
-            await ReadExactAsync(header, 0, minHeader);
+            ReadExactAsync(header, 0, minHeader);
 
             // 从 header 中提取长度值
             long lengthValue = 0;
@@ -114,7 +135,7 @@ namespace MyProt
             {
                 byte[] full = new byte[totalLength];
                 Buffer.BlockCopy(header, 0, full, 0, minHeader);
-                await ReadExactAsync(full, minHeader, totalLength - minHeader);
+                ReadExactAsync(full, minHeader, totalLength - minHeader);
                 return full;
             }
             else
@@ -124,11 +145,11 @@ namespace MyProt
             }
         }
 
-        private async Task ReadExactAsync(byte[] buffer, int offset, int count)
+        private void ReadExactAsync(byte[] buffer, int offset, int count)
         {
             while (count > 0)
             {
-                int read = await _stream.ReadAsync(buffer, offset, count);
+                int read = _client.Receive(buffer, offset, count, SocketFlags.None);
                 if (read == 0) throw new IOException("连接关闭");
                 offset += read;
                 count -= read;
@@ -138,7 +159,6 @@ namespace MyProt
 
         public void Disconnect()
         {
-            _stream?.Close();
             _client?.Close();
         }
 

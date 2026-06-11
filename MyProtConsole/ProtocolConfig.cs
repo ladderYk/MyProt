@@ -23,10 +23,11 @@ namespace MyProtConsole
         // 返回帧结构
         public FramingConfig framing { get; set; }
     }
-
     public class TransportConfig
     {
+        // 通讯类型
         public string type { get; set; }   // "Tcp", "Serial"
+        // 默认端口
         public int defaultPort { get; set; }
     }
     public class ConnectionConfig
@@ -37,13 +38,17 @@ namespace MyProtConsole
 
     public class OperationConfig
     {
+        // 请求结构体
         public List<string> requestTemplate { get; set; }
+        // 报文返回解析
         public ResponseParserConfig responseParser { get; set; }
     }
 
     public class ResponseParserConfig
     {
+        // 判断条件
         public string validCondition { get; set; }
+        // 
         public int dataStartIndex { get; set; }
         public string dataLengthExpr { get; set; }
         public string valueType { get; set; }   // "ByteArray", "UInt16", "Empty"
